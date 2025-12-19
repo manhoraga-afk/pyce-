@@ -22,4 +22,5 @@ make
 
 logo:
 
-<img width="1024" height="1024" alt="1766153885" src="https://github.com/user-attachments/assets/a2cc2d36-a73e-4ba0-8cf4-4d3b1ba437a6" />
+<img width="450" height="450" alt="image" src="https://github.com/user-attachments/assets/1a82efc0-be0d-4557-ae8d-9031364bc2b8" />
+
