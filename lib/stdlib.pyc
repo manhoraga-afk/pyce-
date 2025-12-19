@@ -1,0 +1,120 @@
+// Pycee++ Standard Library
+// Automatically included in all programs
+
+// String operations
+action length (text):
+    report #string_length(text)
+end
+
+action upper (text):
+    report #string_upper(text)
+end
+
+action lower (text):
+    report #string_lower(text)
+end
+
+action trim (text):
+    report #string_trim(text)
+end
+
+action contains (text, word):
+    report #string_contains(text, word)
+end
+
+// List operations
+action add (item, list):
+    #list_add(item, list)
+    report list
+end
+
+action remove (item, list):
+    #list_remove(item, list)
+    report list
+end
+
+action count (list):
+    report #list_count(list)
+end
+
+action first (list):
+    report #list_first(list)
+end
+
+action last (list):
+    report #list_last(list)
+end
+
+action sort (list):
+    report #list_sort(list)
+end
+
+// Math operations
+action min (a, b):
+    if a < b then
+        report a
+    else
+        report b
+    end
+end
+
+action max (a, b):
+    if a > b then
+        report a
+    else
+        report b
+    end
+end
+
+action abs (num):
+    if num < 0 then
+        report num * -1
+    else
+        report num
+    end
+end
+
+// Time operations
+action now ():
+    report #get_current_time()
+end
+
+action today ():
+    report #get_current_date()
+end
+
+action add_days (date, days):
+    report #date_add_days(date, days)
+end
+
+// File operations
+action read_file (path):
+    report #file_read(path)
+end
+
+action write_file (path, data):
+    report #file_write(path, data)
+end
+
+action exists (path):
+    report #file_exists(path)
+end
+
+// Network operations
+action request (url):
+    report #http_get(url)
+end
+
+// UI operations
+action show (screen_name):
+    #ui_show(screen_name)
+end
+
+action refresh (screen_name):
+    #ui_refresh(screen_name)
+end
+
+// System operations
+action exit ():
+    #system_exit()
+end
