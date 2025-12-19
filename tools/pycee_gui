@@ -1,0 +1,288 @@
+#!/usr/bin/env python3
+"""
+Pycee++ UI Designer
+Drag-and-drop interface designer for Pycee++ UIs
+"""
+
+import sys
+import json
+import os
+from pathlib import Path
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+
+class PyceeUIDesigner:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Pycee++ UI Designer")
+        self.root.geometry("1200x800")
+
+        # Project state
+        self.current_file = None
+        self.ui_elements = []
+        self.selected_element = None
+
+        self.create_menu()
+        self.create_toolbox()
+        self.create_workspace()
+        self.create_properties()
+        self.create_preview()
+
+        # Example UI
+        self.load_example()
+
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="New", command=self.new_project)
+        file_menu.add_command(label="Open...", command=self.open_project)
+        file_menu.add_command(label="Save", command=self.save_project)
+        file_menu.add_command(label="Save As...", command=self.save_project_as)
+        file_menu.add_separator()
+        file_menu.add_command(label="Export to Pycee++", command=self.export_to_pycee)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        view_menu = tk.Menu(menubar, tearoff=0)
+        view_menu.add_command(label="Preview", command=self.toggle_preview)
+        view_menu.add_command(label="Properties", command=self.toggle_properties)
+        menubar.add_cascade(label="View", menu=view_menu)
+
+        self.root.config(menu=menubar)
+
+    def create_toolbox(self):
+        toolbox_frame = ttk.LabelFrame(self.root, text="Elements")
+        toolbox_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+
+        elements = [
+            ("Text", "text"),
+            ("Button", "button"),
+            ("Input Field", "input"),
+            ("Image", "image"),
+            ("List", "list"),
+            ("Chart", "chart"),
+            ("Map", "map")
+        ]
+
+        for i, (name, element_type) in enumerate(elements):
+            btn = ttk.Button(toolbox_frame, text=name,
+                            command=lambda t=element_type: self.add_element(t))
+            btn.grid(row=i, column=0, padx=5, pady=2, sticky="ew")
+
+    def create_workspace(self):
+        workspace_frame = ttk.LabelFrame(self.root, text="Design")
+        workspace_frame.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+
+        self.canvas = tk.Canvas(workspace_frame, bg="#f0f0f0", width=800, height=600)
+        self.canvas.pack(fill="both", expand=True)
+
+        # Grid lines
+        for i in range(0, 801, 20):
+            self.canvas.create_line(i, 0, i, 600, fill="#e0e0e0")
+        for i in range(0, 601, 20):
+            self.canvas.create_line(0, i, 800, i, fill="#e0e0e0")
+
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
+
+    def create_properties(self):
+        self.properties_frame = ttk.LabelFrame(self.root, text="Properties")
+        self.properties_frame.grid(row=0, column=2, padx=5, pady=5, sticky="nsew")
+
+        # Common properties
+        ttk.Label(self.properties_frame, text="ID:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        self.id_var = tk.StringVar()
+        ttk.Entry(self.properties_frame, textvariable=self.id_var).grid(row=0, column=1, sticky="ew", padx=5)
+
+        ttk.Label(self.properties_frame, text="Text:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        self.text_var = tk.StringVar()
+        ttk.Entry(self.properties_frame, textvariable=self.text_var).grid(row=1, column=1, sticky="ew", padx=5)
+
+        ttk.Label(self.properties_frame, text="Action:").grid(row=2, column=0, sticky="w", padx=5, pady=2)
+        self.action_var = tk.StringVar()
+        ttk.Entry(self.properties_frame, textvariable=self.action_var).grid(row=2, column=1, sticky="ew", padx=5)
+
+        # Update button
+        ttk.Button(self.properties_frame, text="Apply Changes",
+                  command=self.update_element).grid(row=3, column=0, columnspan=2, pady=10)
+
+    def create_preview(self):
+        self.preview_visible = True
+        self.preview_frame = ttk.LabelFrame(self.root, text="Preview")
+        self.preview_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
+
+        self.preview_text = tk.Text(self.preview_frame, height=10, font=("Courier", 10))
+        self.preview_text.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Initial preview
+        self.update_preview()
+
+    def add_element(self, element_type):
+        element = {
+            "type": element_type,
+            "id": f"{element_type}_{len(self.ui_elements) + 1}",
+            "x": 50 + (len(self.ui_elements) * 20) % 200,
+            "y": 50 + (len(self.ui_elements) * 30) % 300,
+            "width": 120,
+            "height": 40,
+            "text": element_type.capitalize(),
+            "action": f"on_{element_type}_{len(self.ui_elements) + 1}"
+        }
+
+        self.ui_elements.append(element)
+        self.draw_element(element)
+        self.update_preview()
+
+    def draw_element(self, element):
+        x1 = element["x"]
+        y1 = element["y"]
+        x2 = x1 + element["width"]
+        y2 = y1 + element["height"]
+
+        color = {
+            "text": "#4a6fa5",
+            "button": "#4CAF50",
+            "input": "#2196F3",
+            "image": "#9C27B0",
+            "list": "#FF9800",
+            "chart": "#E91E63",
+            "map": "#3F51B5"
+        }.get(element["type"], "#607D8B")
+
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="white", tags=element["id"])
+        self.canvas.create_text((x1 + x2) // 2, (y1 + y2) // 2,
+                               text=element["text"], fill="white", tags=f"{element['id']}_text")
+
+    def on_canvas_click(self, event):
+        # Find element at click position
+        self.selected_element = None
+        for element in self.ui_elements:
+            if (element["x"] <= event.x <= element["x"] + element["width"] and
+                element["y"] <= event.y <= element["y"] + element["height"]):
+                self.selected_element = element
+                self.load_element_properties(element)
+                break
+
+    def on_canvas_drag(self, event):
+        if self.selected_element:
+            self.selected_element["x"] = event.x - self.selected_element["width"] // 2
+            self.selected_element["y"] = event.y - self.selected_element["height"] // 2
+
+            # Redraw canvas
+            self.canvas.delete("all")
+            for element in self.ui_elements:
+                self.draw_element(element)
+
+    def load_element_properties(self, element):
+        self.id_var.set(element.get("id", ""))
+        self.text_var.set(element.get("text", ""))
+        self.action_var.set(element.get("action", ""))
+
+    def update_element(self):
+        if not self.selected_element:
+            return
+
+        self.selected_element["id"] = self.id_var.get()
+        self.selected_element["text"] = self.text_var.get()
+        self.selected_element["action"] = self.action_var.get()
+
+        # Redraw canvas
+        self.canvas.delete("all")
+        for element in self.ui_elements:
+            self.draw_element(element)
+
+        self.update_preview()
+
+    def update_preview(self):
+        if not self.preview_visible:
+            return
+
+        self.preview_text.delete(1.0, tk.END)
+
+        preview_code = f"ui {self.current_file or 'MyScreen'}:\n"
+        preview_code += "    title \"My Application\"\n\n"
+
+        for element in self.ui_elements:
+            if element["type"] == "text":
+                preview_code += f"    text \"{element['text']}\"\n"
+            elif element["type"] == "button":
+                preview_code += f"    button \"{element['text']}\" does:\n"
+                preview_code += f"        do {element['action']}\n"
+                preview_code += "    end\n"
+            elif element["type"] == "input":
+                preview_code += f"    input {element['id']}\n"
+
+        preview_code += "end"
+
+        self.preview_text.insert(1.0, preview_code)
+
+    def toggle_preview(self):
+        self.preview_visible = not self.preview_visible
+        if self.preview_visible:
+            self.preview_frame.grid()
+        else:
+            self.preview_frame.grid_remove()
+
+    def toggle_properties(self):
+        if self.properties_frame.winfo_viewable():
+            self.properties_frame.grid_remove()
+        else:
+            self.properties_frame.grid()
+
+    def export_to_pycee(self):
+        if not self.ui_elements:
+            messagebox.showinfo("Export", "No UI elements to export!")
+            return
+
+        filename = filedialog.asksaveasfilename(
+            title="Export to Pycee++",
+            defaultextension=".pyc",
+            filetypes=[("Pycee++ Files", "*.pyc"), ("All Files", "*.*")]
+        )
+
+        if not filename:
+            return
+
+        with open(filename, "w") as f:
+            screen_name = os.path.splitext(os.path.basename(filename))[0]
+            f.write(f"ui {screen_name}:\n")
+            f.write(f"    title \"{screen_name}\"\n\n")
+
+            for element in self.ui_elements:
+                if element["type"] == "text":
+                    f.write(f"    text \"{element['text']}\"\n")
+                elif element["type"] == "button":
+                    f.write(f"    button \"{element['text']}\" does:\n")
+                    f.write(f"        do {element['action']}\n")
+                    f.write("    end\n")
+                elif element["type"] == "input":
+                    f.write(f"    input {element['id']}\n")
+
+            f.write("end\n")
+
+        messagebox.showinfo("Export Successful",
+                           f"UI exported to {filename}\n\nYou can now use this file in your Pycee++ project!")
+
+    def load_example(self):
+        self.ui_elements = [
+            {"type": "text", "id": "welcome", "x": 100, "y": 50, "width": 200, "height": 30,
+             "text": "Welcome to Pycee++!", "action": ""},
+            {"type": "input", "id": "username", "x": 100, "y": 100, "width": 200, "height": 40,
+             "text": "Username", "action": ""},
+            {"type": "button", "id": "login", "x": 100, "y": 160, "width": 120, "height": 40,
+             "text": "Login", "action": "handle_login"},
+            {"type": "button", "id": "signup", "x": 240, "y": 160, "width": 120, "height": 40,
+             "text": "Sign Up", "action": "handle_signup"}
+        ]
+
+        for element in self.ui_elements:
+            self.draw_element(element)
+
+        self.update_preview()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PyceeUIDesigner(root)
+    root.mainloop()
