@@ -1,0 +1,29 @@
+group set todos #
+
+ui TodoApp:
+    title "My Tasks"
+    
+    input new_task
+    button "Add" does:
+        if new_task = "" then
+            skip
+        end
+        add new_task to todos
+        new_task = ""
+        refresh TodoApp
+    end
+    
+    list todos with delete_action
+    
+    button "Clear All" does:
+        clear todos
+        refresh TodoApp
+    end
+    
+    text join(You have, count todos, tasks.)
+end
+
+action delete_todo (item):
+    remove item from todos
+    refresh TodoApp
+end

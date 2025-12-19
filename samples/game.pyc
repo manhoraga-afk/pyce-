@@ -1,0 +1,28 @@
+number set secret #
+number set guesses to 0
+
+action start_game ():
+    secret = random(1, 100)
+    guesses = 0
+end
+
+ui Game:
+    text "Guess a number between 1 and 100"
+    input guess
+    button "Check" does:
+        guesses = guesses + 1
+        number_guess = tonumber(guess)
+        
+        if number_guess < secret then
+            show #Too low!
+        else if number_guess > secret then
+            show #Too high!
+        else
+            show #Correct! You won in guesses tries.
+            do start_game()
+        end
+    end
+end
+
+do start_game()
+do show Game

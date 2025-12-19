@@ -1,0 +1,10 @@
+set x to 10
+set y to 20
+set sum to x plus y
+report join(Sum:, sum)
+
+set encoded to tonumber(hello)
+report join(hello as number:, encoded)
+
+set text_version to totext(sum)
+report join(Number as text:, text_version)
