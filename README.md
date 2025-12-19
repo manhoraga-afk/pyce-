@@ -16,4 +16,10 @@ A programming language that's **easy to learn**, **easy to read**, and has the *
 
 ### 1. Build the compiler
 ```bash
+
 make
+
+
+logo:
+
+<img width="1024" height="1024" alt="1766153885" src="https://github.com/user-attachments/assets/a2cc2d36-a73e-4ba0-8cf4-4d3b1ba437a6" />
