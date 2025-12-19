@@ -1,0 +1,55 @@
+CC = gcc
+CFLAGS = -Iinclude -g -Wall -std=c99
+LDFLAGS = -lm
+SRC_DIR = src
+RUNTIME_DIR = runtime
+INCLUDE_DIR = include
+BUILD_DIR = build
+BIN_DIR = bin
+
+SOURCES = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(RUNTIME_DIR)/*.c)
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+OBJECTS := $(OBJECTS:$(RUNTIME_DIR)/%.c=$(BUILD_DIR)/%.o)
+
+all: $(BIN_DIR)/pycee
+
+$(BIN_DIR)/pycee: $(OBJECTS) | $(BIN_DIR)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(RUNTIME_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN_DIR):
+	mkdir -p $@
+
+$(BUILD_DIR):
+	mkdir -p $@
+	mkdir -p $@/src
+	mkdir -p $@/runtime
+
+clean:
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
+	rm -f samples/*.pycb samples/hello samples/number samples/todo samples/game
+
+run-hello: all
+	$(BIN_DIR)/pycee run samples/hello.pyc
+
+build-hello: all
+	$(BIN_DIR)/pycee build samples/hello.pyc
+
+compile-hello: all
+	$(BIN_DIR)/pycee compile samples/hello.pyc
+
+run-number: all
+	$(BIN_DIR)/pycee run samples/number.pyc
+
+compile-number: all
+	$(BIN_DIR)/pycee compile samples/number.pyc
+
+run-game: all
+	$(BIN_DIR)/pycee run samples/game.pyc
+
+.PHONY: all clean run-hello build-hello compile-hello run-number compile-number run-game
